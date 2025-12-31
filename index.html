@@ -4,39 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* Принудительно делаем саму страницу прозрачной */
-        html, body {
-            background: transparent !important;
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-        }
-
+        /* Базовые переменные для ТЕМНОЙ темы (как на скрине) */
         :root {
-            /* Цвета по умолчанию (темная тема) */
-            --text-color: #ffffff;
-            --input-bg: rgba(255, 255, 255, 0.1);
-            --border-color: rgba(255, 255, 255, 0.2);
-            --accent-color: #4a90e2;
+            --bg-color: #26262b; /* Глубокий серый Vivaldi */
+            --text-color: #efefef;
+            --input-bg: #323239;
+            --border: #3e3e46;
+            --accent: #4a90e2;
         }
 
-        /* Автоматическое переключение на светлую тему, если браузер в ней */
+        /* Авто-переключение на СВЕТЛУЮ тему */
         @media (prefers-color-scheme: light) {
             :root {
+                --bg-color: #ffffff;
                 --text-color: #222222;
-                --input-bg: rgba(0, 0, 0, 0.05);
-                --border-color: rgba(0, 0, 0, 0.1);
+                --input-bg: #f0f0f0;
+                --border: #dcdcdc;
             }
         }
 
-        .widget-container {
-            padding: 12px;
+        html, body {
+            background-color: var(--bg-color);
             color: var(--text-color);
-            /* Легкое размытие, чтобы текст не сливался с обоями */
-            backdrop-filter: blur(8px); 
-            -webkit-backdrop-filter: blur(8px);
-            border-radius: 8px;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100%;
+        }
+
+        .widget-wrapper {
+            padding: 12px;
+            box-sizing: border-box;
         }
 
         .header {
@@ -44,61 +42,63 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
-            font-size: 13px;
-            font-weight: 600;
-            opacity: 0.9;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.7;
         }
 
         .currency-row {
             display: flex;
-            gap: 6px;
+            gap: 8px;
             margin-bottom: 8px;
+            align-items: center;
         }
 
         input, select {
             background: var(--input-bg);
-            border: 1px solid var(--border-color);
-            color: inherit;
-            padding: 6px 8px;
-            border-radius: 6px;
+            border: 1px solid var(--border);
+            color: var(--text-color);
+            padding: 8px;
+            border-radius: 4px;
             font-size: 14px;
             outline: none;
         }
 
-        input { flex: 1; width: 40px; }
-        select { width: 90px; cursor: pointer; }
+        input { flex: 1; min-width: 50px; text-align: left; }
+        select { width: 100px; cursor: pointer; }
 
         .btn {
             border: none;
-            border-radius: 6px;
+            border-radius: 4px;
             cursor: pointer;
             background: var(--input-bg);
-            color: inherit;
-            padding: 6px;
+            color: var(--text-color);
+            padding: 8px;
             transition: 0.2s;
         }
 
-        .btn:hover { background: var(--border-color); }
-        .btn-add { width: 100%; margin-top: 4px; font-size: 12px; border: 1px dashed var(--border-color); }
-        .btn-del { color: #ff5e5e; width: 30px; }
-        .btn-settings { background: none; font-size: 16px; opacity: 0.7; }
+        .btn:hover { background: var(--border); }
+        .btn-add { width: 100%; margin-top: 8px; border: 1px solid var(--border); opacity: 0.8; }
+        .btn-del { color: #ff5e5e; font-weight: bold; width: 32px; }
+        .btn-settings { background: none; font-size: 16px; padding: 0; }
 
-        /* Настройки */
-        .settings-panel {
+        /* Панель настроек избранного */
+        .settings-area {
             display: none;
-            background: var(--input-bg);
+            background: rgba(0,0,0,0.1);
             padding: 10px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            margin-bottom: 12px;
         }
-        .settings-panel.active { display: block; }
-        .fav-item {
+        .settings-area.active { display: block; }
+        .fav-tag {
             display: inline-block;
-            background: var(--accent-color);
+            background: var(--accent);
             color: white;
-            padding: 2px 8px;
-            border-radius: 10px;
+            padding: 3px 8px;
+            border-radius: 4px;
             font-size: 11px;
             margin: 2px;
             cursor: pointer;
@@ -107,28 +107,28 @@
 </head>
 <body>
 
-<div class="widget-container">
+<div class="widget-wrapper">
     <div class="header">
         <span>Конвертер</span>
-        <button class="btn btn-settings" onclick="toggleSettings()">⚙️</button>
+        <button class="btn btn-settings" onclick="toggleSets()">⚙️</button>
     </div>
 
-    <div id="settings" class="settings-panel">
-        <div style="font-size: 11px; margin-bottom: 5px;">Любимые валюты:</div>
+    <div id="settings" class="settings-area">
+        <div style="font-size: 11px; margin-bottom: 8px;">Топ-10 валют (клик для удаления):</div>
         <div id="fav-list"></div>
-        <select id="add-fav-select" style="width: 100%; margin-top: 8px;" onchange="addFavorite(this.value)">
-            <option value="">+ Добавить...</option>
+        <select id="add-fav-select" style="width: 100%; margin-top: 8px;" onchange="addFav(this.value)">
+            <option value="">+ Добавить в избранное...</option>
         </select>
     </div>
 
     <div id="rows-container"></div>
-    <button class="btn btn-add" onclick="addRow()">+ Добавить строку</button>
+    <button class="btn btn-add" onclick="addRow()">+ Добавить валюту</button>
 </div>
 
 <script>
     let rates = {};
-    let favorites = JSON.parse(localStorage.getItem('fav_v4')) || ['USD', 'KZT', 'RUB'];
-    let activeRows = JSON.parse(localStorage.getItem('rows_v4')) || ['USD', 'KZT', 'RUB'];
+    let favorites = JSON.parse(localStorage.getItem('fav_v5')) || ['USD', 'KZT', 'RUB'];
+    let activeRows = JSON.parse(localStorage.getItem('rows_v5')) || ['USD', 'KZT', 'RUB'];
 
     async function init() {
         try {
@@ -136,39 +136,37 @@
             const data = await res.json();
             rates = data.rates;
             
-            fillFavSelect();
-            renderFavorites();
+            fillSelect();
+            renderFavs();
             activeRows.forEach(code => renderRow(code));
             updateAll(null, 1, activeRows[0]);
-        } catch (e) { console.error("Ошибка сети"); }
+        } catch (e) { console.error("API Error"); }
     }
 
-    function toggleSettings() { document.getElementById('settings').classList.toggle('active'); }
+    function toggleSets() { document.getElementById('settings').classList.toggle('active'); }
 
-    function fillFavSelect() {
-        const select = document.getElementById('add-fav-select');
-        select.innerHTML = '<option value="">+ Добавить...</option>' + 
+    function fillSelect() {
+        const sel = document.getElementById('add-fav-select');
+        sel.innerHTML = '<option value="">+ Добавить...</option>' + 
             Object.keys(rates).sort().map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
-    function renderFavorites() {
+    function renderFavs() {
         const div = document.getElementById('fav-list');
-        div.innerHTML = favorites.map(f => `<span class="fav-item" onclick="removeFavorite('${f}')">${f} ×</span>`).join('');
+        div.innerHTML = favorites.map(f => `<span class="fav-tag" onclick="remFav('${f}')">${f} ×</span>`).join('');
     }
 
-    function addFavorite(code) {
+    function addFav(code) {
         if (code && !favorites.includes(code) && favorites.length < 10) {
             favorites.push(code);
-            localStorage.setItem('fav_v4', JSON.stringify(favorites));
-            renderFavorites();
+            localStorage.setItem('fav_v5', JSON.stringify(favorites));
             location.reload(); 
         }
     }
 
-    function removeFavorite(code) {
+    function remFav(code) {
         favorites = favorites.filter(f => f !== code);
-        localStorage.setItem('fav_v4', JSON.stringify(favorites));
-        renderFavorites();
+        localStorage.setItem('fav_v5', JSON.stringify(favorites));
         location.reload();
     }
 
@@ -177,39 +175,39 @@
         const row = document.createElement('div');
         row.className = 'currency-row';
         
-        const sortedCodes = Object.keys(rates).sort((a, b) => {
+        const sorted = Object.keys(rates).sort((a, b) => {
             const aF = favorites.includes(a); const bF = favorites.includes(b);
             return (aF === bF) ? a.localeCompare(b) : aF ? -1 : 1;
         });
 
         row.innerHTML = `
-            <input type="number" step="any" oninput="handleInput(this)">
-            <select onchange="saveRows(); location.reload();">${sortedCodes.map(c => `<option value="${c}" ${c===selectedCode?'selected':''}>${favorites.includes(c)?'⭐ ':''}${c}</option>`).join('')}</select>
-            <button class="btn btn-del" onclick="this.parentElement.remove(); saveRows();">×</button>
+            <input type="number" step="any" oninput="handleIn(this)" placeholder="0.00">
+            <select onchange="saveAll(); location.reload();">${sorted.map(c => `<option value="${c}" ${c===selectedCode?'selected':''}>${favorites.includes(c)?'⭐ ':''}${c}</option>`).join('')}</select>
+            <button class="btn btn-del" onclick="this.parentElement.remove(); saveAll();">×</button>
         `;
         container.appendChild(row);
     }
 
-    function handleInput(el) {
-        const amount = parseFloat(el.value) || 0;
+    function handleIn(el) {
+        const val = parseFloat(el.value) || 0;
         const code = el.nextElementSibling.value;
-        updateAll(el.closest('.currency-row'), amount, code);
+        updateAll(el.closest('.currency-row'), val, code);
     }
 
-    function updateAll(sourceRow, amount, fromCode) {
-        const usd = amount / rates[fromCode];
+    function updateAll(src, amt, from) {
+        const usd = amt / rates[from];
         document.querySelectorAll('.currency-row').forEach(row => {
-            if (row === sourceRow) return;
+            if (row === src) return;
             const target = row.querySelector('select').value;
-            const val = usd * rates[target];
-            row.querySelector('input').value = val > 0.1 ? val.toFixed(2) : val.toFixed(4);
+            const res = usd * rates[target];
+            row.querySelector('input').value = res > 0.1 ? res.toFixed(2) : res.toFixed(4);
         });
     }
 
-    function addRow() { renderRow('USD'); saveRows(); }
-    function saveRows() {
+    function addRow() { renderRow('USD'); saveAll(); }
+    function saveAll() {
         const codes = Array.from(document.querySelectorAll('.currency-row select')).map(s => s.value);
-        localStorage.setItem('rows_v4', JSON.stringify(codes));
+        localStorage.setItem('rows_v5', JSON.stringify(codes));
     }
 
     init();
