@@ -4,20 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        /* Базовые переменные для ТЕМНОЙ темы (как на скрине) */
         :root {
-            --bg-color: #26262b; /* Глубокий серый Vivaldi */
+            /* Ваш точный цвет из RGB (50, 51, 59) */
+            --bg-color: #32333b; 
             --text-color: #efefef;
-            --input-bg: #323239;
-            --border: #3e3e46;
+            --input-bg: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.1);
             --accent: #4a90e2;
         }
 
-        /* Авто-переключение на СВЕТЛУЮ тему */
         @media (prefers-color-scheme: light) {
             :root {
                 --bg-color: #ffffff;
-                --text-color: #222222;
+                --text-color: #222;
                 --input-bg: #f0f0f0;
                 --border: #dcdcdc;
             }
@@ -28,8 +27,21 @@
             color: var(--text-color);
             margin: 0;
             padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: system-ui, -apple-system, sans-serif;
             height: 100%;
+            overflow: hidden;
+        }
+
+        /* Убираем стрелочки (спиннеры) в полях Chrome/Vivaldi */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Убираем стрелочки в Firefox */
+        input[type=number] {
+            -moz-appearance: textfield;
         }
 
         .widget-wrapper {
@@ -42,62 +54,61 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 12px;
-            font-size: 12px;
-            font-weight: bold;
+            font-size: 11px;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            opacity: 0.7;
+            letter-spacing: 1px;
+            opacity: 0.6;
         }
 
         .currency-row {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             margin-bottom: 8px;
-            align-items: center;
         }
 
         input, select {
             background: var(--input-bg);
             border: 1px solid var(--border);
-            color: var(--text-color);
+            color: inherit;
             padding: 8px;
             border-radius: 4px;
             font-size: 14px;
             outline: none;
         }
 
-        input { flex: 1; min-width: 50px; text-align: left; }
-        select { width: 100px; cursor: pointer; }
+        input { flex: 1; min-width: 40px; }
+        select { width: 95px; cursor: pointer; border-left: 2px solid var(--accent); }
 
         .btn {
             border: none;
             border-radius: 4px;
             cursor: pointer;
             background: var(--input-bg);
-            color: var(--text-color);
+            color: inherit;
             padding: 8px;
             transition: 0.2s;
         }
 
         .btn:hover { background: var(--border); }
-        .btn-add { width: 100%; margin-top: 8px; border: 1px solid var(--border); opacity: 0.8; }
-        .btn-del { color: #ff5e5e; font-weight: bold; width: 32px; }
+        .btn-add { width: 100%; margin-top: 8px; font-size: 12px; border: 1px solid var(--border); }
+        .btn-del { color: #ff5e5e; font-weight: bold; width: 30px; opacity: 0.6; }
         .btn-settings { background: none; font-size: 16px; padding: 0; }
 
-        /* Панель настроек избранного */
         .settings-area {
             display: none;
-            background: rgba(0,0,0,0.1);
+            background: rgba(0,0,0,0.2);
             padding: 10px;
             border-radius: 6px;
             margin-bottom: 12px;
+            border: 1px solid var(--border);
         }
         .settings-area.active { display: block; }
         .fav-tag {
             display: inline-block;
             background: var(--accent);
             color: white;
-            padding: 3px 8px;
+            padding: 2px 8px;
             border-radius: 4px;
             font-size: 11px;
             margin: 2px;
@@ -114,21 +125,21 @@
     </div>
 
     <div id="settings" class="settings-area">
-        <div style="font-size: 11px; margin-bottom: 8px;">Топ-10 валют (клик для удаления):</div>
+        <div style="font-size: 10px; margin-bottom: 8px; opacity: 0.8;">ИЗБРАННОЕ:</div>
         <div id="fav-list"></div>
         <select id="add-fav-select" style="width: 100%; margin-top: 8px;" onchange="addFav(this.value)">
-            <option value="">+ Добавить в избранное...</option>
+            <option value="">+ Добавить валюту...</option>
         </select>
     </div>
 
     <div id="rows-container"></div>
-    <button class="btn btn-add" onclick="addRow()">+ Добавить валюту</button>
+    <button class="btn btn-add" onclick="addRow()">+ Добавить строку</button>
 </div>
 
 <script>
     let rates = {};
-    let favorites = JSON.parse(localStorage.getItem('fav_v5')) || ['USD', 'KZT', 'RUB'];
-    let activeRows = JSON.parse(localStorage.getItem('rows_v5')) || ['USD', 'KZT', 'RUB'];
+    let favorites = JSON.parse(localStorage.getItem('fav_v6')) || ['USD', 'KZT', 'RUB'];
+    let activeRows = JSON.parse(localStorage.getItem('rows_v6')) || ['USD', 'KZT', 'RUB'];
 
     async function init() {
         try {
@@ -140,7 +151,7 @@
             renderFavs();
             activeRows.forEach(code => renderRow(code));
             updateAll(null, 1, activeRows[0]);
-        } catch (e) { console.error("API Error"); }
+        } catch (e) { console.error("Error"); }
     }
 
     function toggleSets() { document.getElementById('settings').classList.toggle('active'); }
@@ -159,14 +170,14 @@
     function addFav(code) {
         if (code && !favorites.includes(code) && favorites.length < 10) {
             favorites.push(code);
-            localStorage.setItem('fav_v5', JSON.stringify(favorites));
+            localStorage.setItem('fav_v6', JSON.stringify(favorites));
             location.reload(); 
         }
     }
 
     function remFav(code) {
         favorites = favorites.filter(f => f !== code);
-        localStorage.setItem('fav_v5', JSON.stringify(favorites));
+        localStorage.setItem('fav_v6', JSON.stringify(favorites));
         location.reload();
     }
 
@@ -181,7 +192,7 @@
         });
 
         row.innerHTML = `
-            <input type="number" step="any" oninput="handleIn(this)" placeholder="0.00">
+            <input type="number" oninput="handleIn(this)" placeholder="0.00">
             <select onchange="saveAll(); location.reload();">${sorted.map(c => `<option value="${c}" ${c===selectedCode?'selected':''}>${favorites.includes(c)?'⭐ ':''}${c}</option>`).join('')}</select>
             <button class="btn btn-del" onclick="this.parentElement.remove(); saveAll();">×</button>
         `;
@@ -207,7 +218,7 @@
     function addRow() { renderRow('USD'); saveAll(); }
     function saveAll() {
         const codes = Array.from(document.querySelectorAll('.currency-row select')).map(s => s.value);
-        localStorage.setItem('rows_v5', JSON.stringify(codes));
+        localStorage.setItem('rows_v6', JSON.stringify(codes));
     }
 
     init();
