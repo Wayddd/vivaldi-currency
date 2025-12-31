@@ -3,73 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vivaldi Multi-Currency</title>
     <style>
-        :root { --bg: rgba(255, 255, 255, 0.1); --text: #eee; --accent: #3f51b5; }
-        @media (prefers-color-scheme: light) { :root { --bg: rgba(0, 0, 0, 0.05); --text: #333; } }
+        :root { --bg: rgba(255, 255, 255, 0.1); --text: #eee; --accent: #4a90e2; }
+        @media (prefers-color-scheme: light) { :root { --bg: rgba(0, 0, 0, 0.08); --text: #222; } }
         
-        body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 12px; color: var(--text); background: transparent; }
-        .widget { background: var(--bg); backdrop-filter: blur(10px); border-radius: 12px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; color: var(--text); background: transparent; overflow-x: hidden; }
+        .widget { background: var(--bg); backdrop-filter: blur(12px); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); }
         
-        .currency-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-
-        input, select { background: var(--bg); border: 1px solid rgba(128,128,128,0.2); color: inherit; padding: 8px; border-radius: 6px; font-size: 14px; outline: none; }
-        input { flex: 1; width: 60px; }
-        select { width: 90px; cursor: pointer; }
+        .currency-row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
+        input, select { background: var(--bg); border: 1px solid rgba(128,128,128,0.3); color: inherit; padding: 6px; border-radius: 6px; font-size: 13px; }
+        input { flex: 1; min-width: 50px; }
         
-        .btn { border: none; border-radius: 6px; cursor: pointer; padding: 8px 12px; font-weight: bold; transition: 0.2s; background: var(--accent); color: white; }
-        .btn-add { width: 100%; margin-top: 5px; background: rgba(128,128,128,0.2); color: var(--text); }
-        .btn-del { background: rgba(255, 0, 0, 0.2); color: #ff5555; padding: 8px 10px; }
-        .btn:hover { filter: brightness(1.2); }
+        .btn { border: none; border-radius: 6px; cursor: pointer; padding: 6px; transition: 0.2s; background: var(--accent); color: white; font-size: 12px; }
+        .btn-add { width: 100%; background: rgba(128,128,128,0.2); color: var(--text); margin-top: 5px; }
+        .btn-del { background: rgba(255, 0, 0, 0.2); color: #ff5555; width: 28px; }
+        
+        .fav-star { color: #ffd700; font-size: 10px; margin-right: 4px; }
     </style>
 </head>
 <body>
 
-<div class="widget" id="app">
+<div class="widget">
     <div id="rows-container"></div>
     <button class="btn btn-add" onclick="addRow()">+ Добавить валюту</button>
 </div>
 
 <script>
     let rates = {};
-    const container = document.getElementById('rows-container');
-    const API_URL = 'https://open.er-api.com/v6/latest/USD';
-
-    // Список популярных валют для начала (можно менять)
-    let activeCurrencies = ['USD', 'RUB', 'KZT'];
+    // Загружаем избранное (до 10 шт) и текущие строки из памяти или ставим дефолт
+    let favorites = JSON.parse(localStorage.getItem('fav_currencies')) || ['USD', 'KZT', 'RUB', 'EUR'];
+    let activeRows = JSON.parse(localStorage.getItem('active_rows')) || ['USD', 'KZT', 'RUB'];
 
     async function init() {
         try {
-            const res = await fetch(API_URL);
+            const res = await fetch('https://open.er-api.com/v6/latest/USD');
             const data = await res.json();
             rates = data.rates;
             
-            // Отрисовываем начальные строки
-            activeCurrencies.forEach(code => addRow(code));
-            updateAll(null, 1, 'USD'); 
-        } catch (e) { alert("Ошибка загрузки курсов"); }
+            // Отрисовка сохраненных строк
+            activeRows.forEach(code => renderRow(code));
+            updateAll(null, 1, 'USD');
+        } catch (e) { console.error("Ошибка API"); }
     }
 
-    function addRow(selectedCode = 'USD') {
+    function renderRow(selectedCode) {
+        const container = document.getElementById('rows-container');
         const row = document.createElement('div');
         row.className = 'currency-row';
         
-        const codes = Object.keys(rates).sort();
-        const options = codes.map(c => `<option value="${c}" ${c === selectedCode ? 'selected' : ''}>${c}</option>`).join('');
+        // Сортировка списка: Избранное (favorites) всегда сверху
+        const sortedCodes = Object.keys(rates).sort((a, b) => {
+            const aFav = favorites.includes(a);
+            const bFav = favorites.includes(b);
+            if (aFav && !bFav) return -1;
+            if (!aFav && bFav) return 1;
+            return a.localeCompare(b);
+        });
+
+        const options = sortedCodes.map(c => {
+            const isFav = favorites.includes(c) ? '⭐ ' : '';
+            return `<option value="${c}" ${c === selectedCode ? 'selected' : ''}>${isFav}${c}</option>`;
+        }).join('');
 
         row.innerHTML = `
-            <input type="number" step="any" class="amount-input" value="1" oninput="handleInput(this)">
-            <select onchange="handleInput(this)">${options}</select>
-            ${container.children.length > 1 ? '<button class="btn btn-del" onclick="this.parentElement.remove()">×</button>' : '<span>&nbsp;&nbsp;&nbsp;&nbsp;</span>'}
+            <input type="number" step="any" class="amount-input" oninput="handleInput(this)">
+            <select onchange="saveAndRefresh(this)">${options}</select>
+            <button class="btn btn-del" onclick="removeRow(this)">×</button>
         `;
         container.appendChild(row);
-        if (rates['USD']) handleInput(container.querySelector('input'));
     }
 
     function handleInput(el) {
         const row = el.closest('.currency-row');
-        const amount = parseFloat(row.querySelector('input').value) || 0;
+        const amount = parseFloat(el.value) || 0;
         const code = row.querySelector('select').value;
         updateAll(row, amount, code);
     }
@@ -81,8 +87,36 @@
             const targetCode = row.querySelector('select').value;
             const targetInput = row.querySelector('input');
             const result = amountInUsd * rates[targetCode];
-            targetInput.value = result > 1 ? result.toFixed(2) : result.toFixed(4);
+            targetInput.value = result > 0.01 ? result.toFixed(2) : result.toFixed(5);
         });
+    }
+
+    function addRow() {
+        renderRow('USD');
+        saveState();
+    }
+
+    function removeRow(btn) {
+        btn.parentElement.remove();
+        saveState();
+    }
+
+    function saveState() {
+        const currentCodes = Array.from(document.querySelectorAll('select')).map(s => s.value);
+        localStorage.setItem('active_rows', JSON.stringify(currentCodes));
+    }
+
+    function saveAndRefresh(select) {
+        // Если пользователь выбрал новую валюту, которой нет в избранном, 
+        // и список избранного < 10, можем автоматически её туда добавить (опционально)
+        const newCode = select.value;
+        if (!favorites.includes(newCode) && favorites.length < 10) {
+            favorites.push(newCode);
+            localStorage.setItem('fav_currencies', JSON.stringify(favorites));
+        }
+        saveState();
+        // Перерисовываем всё, чтобы обновить порядок во всех списках select
+        location.reload(); 
     }
 
     init();
