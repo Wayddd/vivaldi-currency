@@ -4,41 +4,118 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        :root { --bg: rgba(255, 255, 255, 0.1); --text: #eee; --accent: #4a90e2; }
-        @media (prefers-color-scheme: light) { :root { --bg: rgba(0, 0, 0, 0.08); --text: #222; } }
-        
-        body { font-family: system-ui, sans-serif; margin: 0; padding: 10px; color: var(--text); background: transparent; }
-        .widget { background: var(--bg); backdrop-filter: blur(12px); border-radius: 12px; padding: 12px; border: 1px solid rgba(255,255,255,0.1); position: relative; }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .settings-panel { display: none; background: var(--bg); border-radius: 8px; padding: 10px; margin-bottom: 10px; border: 1px solid var(--accent); }
+        /* Переменные для адаптации под тему Vivaldi */
+        :root {
+            --v-text: #eee;
+            --v-bg: rgba(255, 255, 255, 0.05);
+            --v-border: rgba(255, 255, 255, 0.1);
+            --v-accent: #4a90e2;
+        }
+        /* Авто-смена цветов, если в Vivaldi светлая тема */
+        @media (prefers-color-scheme: light) {
+            :root {
+                --v-text: #222;
+                --v-bg: rgba(0, 0, 0, 0.05);
+                --v-border: rgba(0, 0, 0, 0.1);
+            }
+        }
+
+        body {
+            font-family: inherit; /* Берет системный шрифт Vivaldi */
+            margin: 0;
+            padding: 4px; /* Уменьшил поля для компактности */
+            color: var(--v-text);
+            background: transparent; /* Обязательно для прозрачности */
+            user-select: none;
+        }
+
+        .widget {
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            opacity: 0.8;
+        }
+
+        .currency-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+
+        input, select {
+            background: var(--v-bg);
+            border: 1px solid var(--v-border);
+            color: var(--v-text);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus { border-color: var(--v-accent); }
+        input { flex: 1; width: 40px; text-align: right; }
+        select { width: 95px; cursor: pointer; border-left: 3px solid var(--v-accent); }
+
+        .btn {
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            padding: 8px;
+            background: var(--v-bg);
+            color: var(--v-text);
+            font-size: 12px;
+            transition: 0.2s;
+        }
+
+        .btn:hover { background: var(--v-border); }
+        .btn-add { width: 100%; margin-top: 5px; border: 1px dashed var(--v-border); }
+        .btn-del { color: #ff5555; width: 32px; font-weight: bold; }
+        .btn-settings { background: none; font-size: 16px; padding: 0; }
+
+        /* Панель настроек */
+        .settings-panel {
+            display: none;
+            background: var(--v-bg);
+            border: 1px solid var(--v-border);
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            backdrop-filter: blur(10px);
+        }
         .settings-panel.active { display: block; }
-
-        .currency-row { display: flex; gap: 6px; margin-bottom: 8px; align-items: center; }
-        input, select { background: var(--bg); border: 1px solid rgba(128,128,128,0.3); color: inherit; padding: 6px; border-radius: 6px; font-size: 13px; outline: none; }
-        input { flex: 1; width: 50px; }
-        
-        .btn { border: none; border-radius: 6px; cursor: pointer; padding: 6px; transition: 0.2s; background: var(--accent); color: white; }
-        .btn-add { width: 100%; background: rgba(128,128,128,0.2); color: var(--text); }
-        .btn-del { background: rgba(255, 0, 0, 0.2); color: #ff5555; width: 28px; }
-        .btn-settings { background: none; font-size: 18px; padding: 0 5px; }
-
-        .fav-item { display: inline-block; background: var(--accent); padding: 2px 8px; border-radius: 10px; font-size: 11px; margin: 2px; cursor: pointer; }
+        .fav-item {
+            display: inline-block;
+            background: var(--v-accent);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            margin: 2px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
 
 <div class="widget">
     <div class="header">
-        <span style="font-size: 12px; font-weight: bold;">Конвертер</span>
+        <span style="font-size: 13px; font-weight: 500;">Мульти-конвертер</span>
         <button class="btn btn-settings" onclick="toggleSettings()">⚙️</button>
     </div>
 
     <div id="settings" class="settings-panel">
-        <div style="font-size: 11px; margin-bottom: 8px;">Выберите до 10 любимых (клик для удаления):</div>
+        <div style="font-size: 11px; margin-bottom: 8px; opacity: 0.7;">Избранное (до 10):</div>
         <div id="fav-list"></div>
-        <select id="add-fav-select" style="width: 100%; margin-top: 5px;" onchange="addFavorite(this.value)">
-            <option value="">+ Добавить в избранное...</option>
+        <select id="add-fav-select" style="width: 100%; margin-top: 8px;" onchange="addFavorite(this.value)">
+            <option value="">+ Добавить валюту...</option>
         </select>
     </div>
 
@@ -48,11 +125,12 @@
 
 <script>
     let rates = {};
-    let favorites = JSON.parse(localStorage.getItem('fav_v2')) || ['USD', 'KZT', 'RUB'];
-    let activeRows = JSON.parse(localStorage.getItem('rows_v2')) || ['USD', 'KZT'];
+    let favorites = JSON.parse(localStorage.getItem('fav_v3')) || ['USD', 'KZT', 'RUB', 'EUR'];
+    let activeRows = JSON.parse(localStorage.getItem('rows_v3')) || ['USD', 'KZT', 'RUB'];
 
     async function init() {
         try {
+            // Используем более актуальный API
             const res = await fetch('https://open.er-api.com/v6/latest/USD');
             const data = await res.json();
             rates = data.rates;
@@ -75,13 +153,13 @@
 
     function renderFavorites() {
         const div = document.getElementById('fav-list');
-        div.innerHTML = favorites.map(f => `<span class="fav-item" onclick="removeFavorite('${f}')">⭐ ${f} ×</span>`).join('');
+        div.innerHTML = favorites.map(f => `<span class="fav-item" onclick="removeFavorite('${f}')">${f} ×</span>`).join('');
     }
 
     function addFavorite(code) {
         if (code && !favorites.includes(code) && favorites.length < 10) {
             favorites.push(code);
-            localStorage.setItem('fav_v2', JSON.stringify(favorites));
+            localStorage.setItem('fav_v3', JSON.stringify(favorites));
             renderFavorites();
             refreshAllSelects();
         }
@@ -89,7 +167,7 @@
 
     function removeFavorite(code) {
         favorites = favorites.filter(f => f !== code);
-        localStorage.setItem('fav_v2', JSON.stringify(favorites));
+        localStorage.setItem('fav_v3', JSON.stringify(favorites));
         renderFavorites();
         refreshAllSelects();
     }
@@ -106,7 +184,7 @@
 
         row.innerHTML = `
             <input type="number" step="any" oninput="handleInput(this)">
-            <select onchange="saveRows()">${sortedCodes.map(c => `<option value="${c}" ${c===selectedCode?'selected':''}>${favorites.includes(c)?'⭐ ':''}${c}</option>`).join('')}</select>
+            <select onchange="saveRows(); refreshAllSelects();">${sortedCodes.map(c => `<option value="${c}" ${c===selectedCode?'selected':''}>${favorites.includes(c)?'⭐ ':''}${c}</option>`).join('')}</select>
             <button class="btn btn-del" onclick="this.parentElement.remove(); saveRows();">×</button>
         `;
         container.appendChild(row);
@@ -131,7 +209,7 @@
     function addRow() { renderRow('USD'); saveRows(); }
     function saveRows() {
         const codes = Array.from(document.querySelectorAll('.currency-row select')).map(s => s.value);
-        localStorage.setItem('rows_v2', JSON.stringify(codes));
+        localStorage.setItem('rows_v3', JSON.stringify(codes));
     }
     function refreshAllSelects() {
         const currentRows = Array.from(document.querySelectorAll('.currency-row select')).map(s => s.value);
